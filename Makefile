@@ -15,11 +15,11 @@ install_prerequisites:
 
 
 %.o: %.cpp
-	@$(CC) -O2 -c -o $@  $<
+	@$(CC) -O2 -c -o $@    $<
 	
 safety_feature: safety_feature.o  main.o 
 	@$(call msg,Building the safety featue applicatio  ...)
-	$(CC) -O2 $^ -o $@
+	$(CC) -O2  $^ -lstdc++  -o $@
 
 run: safety_feature
 	@$(call msg,Running the safety feaure ...)
