@@ -34,7 +34,7 @@ typedef void (*Callback_t)(void*);
 // 				Public Functions
 //-------------------------------------------------------------------------------------------------------
 
-Status_t Timer_Start(uint32_t TimeoutMs, Callback_t Callback, void* UserParam, Image_t& CustomImage );
-Status_t Timer_Reset();
-Status_t Timer_Stop();
-State_t  Timer_State();
+Status_t TimerStart(uint32_t TimeoutMs, Callback_t Callback, void* UserParam, Image_t& CustomImage );
+Status_t TimerReset();
+Status_t TimerStop();
+State_t  TimerState();

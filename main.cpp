@@ -14,12 +14,12 @@ using namespace std;
 
 static void callback(void* userParam) 
 {
-
+	std::cout<<"\t -> User Callback : "<<(int)userParam << " State "<<TimerState()<< std::endl;
 }
 
-static bool wait_key(uint32_t timeout) 
+static bool wait_key(uint32_t timeout, int *c) 
 {
-	struct termios oldSettings, newSettings;
+    struct termios oldSettings, newSettings;
     tcgetattr( fileno( stdin ), &oldSettings );
     newSettings = oldSettings;
     newSettings.c_lflag &= (~ICANON & ~ECHO);
@@ -37,8 +37,7 @@ static bool wait_key(uint32_t timeout)
     int res = select( fileno( stdin )+1, &set, NULL, NULL, &tv );
 
  	if( res > 0 ) {
-        char c;
-        read( fileno( stdin ), &c, 1 );
+        read( fileno( stdin ), c, 1 );
     }
 
     tcsetattr( fileno( stdin ), TCSANOW, &oldSettings );
@@ -59,21 +58,26 @@ int main(int argc, char* argv[])
 		timeout = stoi(env_p);
 	}
 
-	ret = Timer_Start(timeout, callback, NULL, custImage);
+	ret = TimerStart(timeout, callback, (void*)1234, custImage);
 	if ( ret != OK ) {
 		std::cout<<"Timer_Start failed"<<std::endl;
 		return -1;
 	}
 
 	while ( true ) {
-		if (!wait_key(timeout))
-			Timer_Reset();
+		int c;
+		if (!wait_key(timeout-10, &c)) {
+			TimerReset();
+		}
 		else {
-			std::cout<<"Key Pressed"<<std::endl;
+			std::cout<<"\nKey Pressed: "<<c<<std::endl;
+
+			if ( c == 'c' ) {
+				break;
+			}
 		}
 	}
-	state = Timer_State();
-	printf("%d\n",state);
 
+	TimerStop();
 	return 0;
 }

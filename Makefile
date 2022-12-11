@@ -15,7 +15,7 @@ install_prerequisites:
 
 
 %.o: %.cpp
-	@$(CC) -O2 -c -o $@    $<
+	@$(CC) -O2 -fpermissive -c -o $@     $<
 	
 safety_feature: safety_feature.o  main.o 
 	@$(call msg,Building the safety featue applicatio  ...)
