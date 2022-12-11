@@ -70,10 +70,10 @@ int main(int argc, char* argv[])
 			TimerReset();
 		}
 		else {
-			std::cout<<"\nKey Pressed: "<<c<<std::endl;
+			std::cout<<"\nKey Pressed: "<<std::endl;
 
 			if ( c == 'c' ) {
-				break;
+				//break;
 			}
 		}
 	}

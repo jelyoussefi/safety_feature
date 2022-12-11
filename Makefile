@@ -10,19 +10,16 @@ CC=gcc
 default: run 
 .PHONY:  
 
-install_prerequisites:
-	@make -C ./deps/ install
-
 
 %.o: %.cpp
 	@$(CC) -O2 -fpermissive -c -o $@     $<
 	
 safety_feature: safety_feature.o  main.o 
-	@$(call msg,Building the safety featue applicatio  ...)
-	$(CC) -O2  $^ -lstdc++  -o $@
+	@$(call msg,Building the safety feature application  ...)
+	@$(CC) -O2  $^ -lstdc++  -o $@
 
 run: safety_feature
-	@$(call msg,Running the safety feaure ...)
+	@$(call msg,Testing the safety feature application ...)
 	@./safety_feature
 
 

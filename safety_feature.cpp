@@ -16,6 +16,7 @@
 #include <sys/ioctl.h>
 #include <chrono>
 #include <linux/hpet.h>
+#include <linux/watchdog.h>
 
 
 #include "safety_feature.hpp"
@@ -44,7 +45,9 @@ static Image_t customImage;
 static State_t state = IDLE;
 static Time_t startTime;
 static sig_t oldSignal;
-static int fd ;
+static int hpet_fd ;
+static int watchdog_fd ;
+
 
 //-------------------------------------------------------------------------------------------------------
 //              Loal Functions
@@ -78,42 +81,59 @@ Status_t TimerStart(uint32_t TimeoutMs, Callback_t Callback, void* UserParam, Im
         return ERROR;
     }
 
-    fd = open("/dev/hpet", O_RDONLY);
-    if (fd < 0) {
+    hpet_fd = open("/dev/hpet", O_RDONLY);
+    if (hpet_fd < 0) {
         std::cout<<"Failed to open /dev/hpet"<<std::endl;
         return ERROR;
     }
 
-    if ( (fcntl(fd, F_SETOWN, getpid()) == 1) || 
-         ((value = fcntl(fd, F_GETFL)) == 1) ||
-         (fcntl(fd, F_SETFL, value | O_ASYNC) == 1)) {
+    if ( (fcntl(hpet_fd, F_SETOWN, getpid()) == 1) || 
+         ((value = fcntl(hpet_fd, F_GETFL)) == 1) ||
+         (fcntl(hpet_fd, F_SETFL, value | O_ASYNC) == 1)) {
          std::cout<<"fcntl failed"<<std::endl;
         return ERROR;
     }
-  
-    state = MONITORING;
 
+    watchdog_fd = open("/dev/watchdog", O_RDWR);
+    if (watchdog_fd < 0) {
+        std::cout<<"Failed to open /dev/watchdog"<<std::endl;
+        return ERROR;
+    }
+	
+
+    state = IDLE;
     return TimerReset();
 }
 
 Status_t TimerReset()
 {
     if ( state == IDLE ) {
-        return ERROR;
+	state = MONITORING;
+	int wd_timeout = 1;
+    	int ret = ioctl(watchdog_fd, WDIOC_SETTIMEOUT, &wd_timeout);
+	if ( ret < 0 ) {	
+  		std::cout<<"WDIOC_SETTIMEOUT failed"<<std::endl;
+        	return ERROR;
+	}	
     }
 
-    if (ioctl(fd, HPET_IE_OFF, 0) < 0) {
+    if (ioctl(hpet_fd, HPET_IE_OFF, 0) < 0) {
         std::cout<<"HPET_IE_OFF failed"<<std::endl;
         return ERROR;
     }
 
-    if (ioctl(fd, HPET_IRQFREQ, timeout) < 0) {
+    if (ioctl(hpet_fd, HPET_IRQFREQ, timeout) < 0) {
         std::cout<<"HPET_IRQFREQ failed"<<std::endl;
         return ERROR;
     }
 
-   if (ioctl(fd, HPET_IE_ON, 0) < 0) {
+   if (ioctl(hpet_fd, HPET_IE_ON, 0) < 0) {
         std::cout<<"HPET_IE_ON failed"<<std::endl;
+        return ERROR;
+    }
+
+    if (ioctl(watchdog_fd, WDIOC_KEEPALIVE, 0) < 0) {
+	std::cout<<"WDIOC_KEEPALIVE failed"<<std::endl;
         return ERROR;
     }
 
@@ -124,10 +144,12 @@ Status_t TimerReset()
 
 Status_t TimerStop()
 {
-    if (ioctl(fd, HPET_IE_OFF, 0) < 0) {
+    if (ioctl(hpet_fd, HPET_IE_OFF, 0) < 0) {
         std::cout<<"HPET_IE_OFF failed"<<std::endl;
         return ERROR;
     }
+    close(hpet_fd);
+    close(watchdog_fd);
 
     signal(SIGIO, oldSignal);
     return OK;
